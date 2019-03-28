@@ -38,23 +38,25 @@
 #include "initialize.h"
 #include "time_measurement.h"
 
-static struct option opt_options[] = {{"gauss-seidel", no_argument, 0, 'g'},
-                                      {"jacobi", no_argument, 0, 'j'},
-                                      {"over-relaxation", no_argument, 0, 'r'},
-                                      {"bare", no_argument, 0, 'b'},
-                                      {"vector", no_argument, 0, 'v'},
-                                      {"parallel", no_argument, 0, 'p'},
-                                      {"parallel-tiled", no_argument, 0, 't'},
-                                      {"domain-x", required_argument, 0, 'n'},
-                                      {"domain-y", required_argument, 0, 'm'},
-                                      {"discrete-x", required_argument, 0, 'x'},
-                                      {"discrete-y", required_argument, 0, 'y'},
-                                      {"output", optional_argument, 0, 'o'},
-                                      {"help", no_argument, 0, 'h'},
-                                      {"max-error", required_argument, 0, 'e'},
-                                      {0, 0, 0, 0}};
+static struct option opt_options[] = {
+    {"gauss-seidel", no_argument, 0, 'g'},
+    {"jacobi", no_argument, 0, 'j'},
+    {"over-relaxation", no_argument, 0, 'r'},
+    {"bare", no_argument, 0, 'b'},
+    {"vector", no_argument, 0, 'v'},
+    {"parallel", no_argument, 0, 'p'},
+    {"parallel-tiled", no_argument, 0, 't'},
+    {"domain-x", required_argument, 0, 'n'},
+    {"domain-y", required_argument, 0, 'm'},
+    {"discrete-x", required_argument, 0, 'x'},
+    {"discrete-y", required_argument, 0, 'y'},
+    {"output", optional_argument, 0, 'o'},
+    {"help", no_argument, 0, 'h'},
+    {"max-error", required_argument, 0, 'e'},
+    {"stop-iteration", required_argument, 0, 'i'},
+    {0, 0, 0, 0}};
 
-static const char options[] = ":gjrbvptn:m:x:y:o:he:";
+static const char options[] = ":gjrbvptn:m:x:y:o:he:i:";
 
 static const char help_string[] =
     "Options:"
@@ -73,7 +75,9 @@ static const char help_string[] =
     "\n  -o --output          : Select the output file name"
     "\n  -h --help            : Print this help"
     "\n  -e --max-error       : Set the halt condition of the solver (e.g. "
-    "1e-3)'";
+    "1e-3)'"
+    "\n  -i --stop-iteration  : Set the halt condition of the solver to a "
+    "specific iteration of the solver";
 
 #define originalNx 500
 #define originalNy 500
@@ -87,6 +91,7 @@ int main(int argc, char **argv) {
   double Lx = originalLx;
   double Ly = originalLy;
   double error_criteria = originalError;
+  size_t num_iterations = 0;
 
   enum solverType solver_type = gaussSeidel;
   enum solverVersion solver_version = bareVersion;
@@ -148,6 +153,16 @@ int main(int argc, char **argv) {
                 "size instead of \"-%c %s\"\n",
                 optchar, optarg);
         Ly = originalLy;
+      }
+      break;
+    case 'i':
+      sscanf_return = sscanf(optarg, "%zu", &num_iterations);
+      if (sscanf_return == EOF || sscanf_return == 0) {
+        fprintf(stderr,
+                "Please enter a positive integer for the stop iteration number"
+                "size instead of \"-%c %s\"\n",
+                optchar, optarg);
+        num_iterations = 0;
       }
       break;
     case 'x':
@@ -217,7 +232,6 @@ int main(int argc, char **argv) {
   double(*heatValsTmp)[Ny] = NULL;
 
   double error = 0.;
-  size_t num_iterations = 0;
   time_measure start, end;
 
   fprintf(stdout, "Running the solver \"%s\" with \"%s\" version\n",

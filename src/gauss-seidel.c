@@ -30,6 +30,7 @@
 
 #include <assert.h>
 #include <math.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <tgmath.h>
 
@@ -47,7 +48,12 @@ void solve_gauss_seidel(size_t sizeX, size_t sizeY,
   double factorX = 0.5 * dy * dy / ((dx * dx) + (dy * dy));
   double factorY = 0.5 * dx * dx / ((dx * dx) + (dy * dy));
 
-  stop_criteria *= stop_criteria;
+  const size_t iteration_stop =
+      *num_iterations != 0 ? *num_iterations : SIZE_MAX;
+  stop_criteria =
+      *num_iterations != 0 ? -INFINITY : stop_criteria * stop_criteria;
+  *num_iterations = 0;
+
   do {
     double max_error = 0.;
     for (size_t i = 1; i < sizeX - 1; ++i) {
@@ -66,7 +72,7 @@ void solve_gauss_seidel(size_t sizeX, size_t sizeY,
     (*num_iterations)++;
     if (!finite(*error_end))
       break;
-  } while (*error_end > stop_criteria);
+  } while (*error_end > stop_criteria && *num_iterations != iteration_stop);
   *error_end = sqrt(*error_end);
 }
 
@@ -83,11 +89,16 @@ void solve_gauss_seidel_parallel(size_t sizeX, size_t sizeY,
   double factorX = 0.5 * dy * dy / ((dx * dx) + (dy * dy));
   double factorY = 0.5 * dx * dx / ((dx * dx) + (dy * dy));
 
-  stop_criteria *= stop_criteria;
+  const size_t iteration_stop =
+      *num_iterations != 0 ? *num_iterations : SIZE_MAX;
+  stop_criteria =
+      *num_iterations != 0 ? -INFINITY : stop_criteria * stop_criteria;
+  *num_iterations = 0;
   double max_error;
 #pragma omp parallel shared(num_iterations, error_end, stop_criteria, sizeX,   \
                             sizeY, t, max_error, factorX, factorY)
   {
+    size_t local_num_iteration = 0;
     do {
 #pragma omp barrier
 #pragma omp single
@@ -106,9 +117,11 @@ void solve_gauss_seidel_parallel(size_t sizeX, size_t sizeY,
       }
 #pragma omp master
       (*num_iterations)++;
+      local_num_iteration++;
       if (!finite(max_error))
         break;
-    } while (max_error > stop_criteria);
+    } while (max_error > stop_criteria &&
+             local_num_iteration != iteration_stop);
   }
   *error_end = sqrt(max_error);
 }
@@ -121,12 +134,17 @@ void solve_gauss_seidel_parallel_tiled(size_t sizeX, size_t sizeY,
   assert(sizeX >= 3 && sizeY >= 3);
   double factorX = 0.5 * dy * dy / ((dx * dx) + (dy * dy));
   double factorY = 0.5 * dx * dx / ((dx * dx) + (dy * dy));
+  const size_t iteration_stop =
+      *num_iterations != 0 ? *num_iterations : SIZE_MAX;
+  stop_criteria =
+      *num_iterations != 0 ? -INFINITY : stop_criteria * stop_criteria;
+  *num_iterations = 0;
 
-  stop_criteria *= stop_criteria;
   double max_error;
 #pragma omp parallel shared(num_iterations, error_end, stop_criteria, sizeX,   \
                             sizeY, t, max_error, factorX, factorY)
   {
+    size_t local_num_iteration = 0;
     do {
 #pragma omp barrier
 #pragma omp single
@@ -152,9 +170,11 @@ void solve_gauss_seidel_parallel_tiled(size_t sizeX, size_t sizeY,
       }
 #pragma omp master
       (*num_iterations)++;
+      local_num_iteration++;
       if (!finite(max_error))
         break;
-    } while (max_error > stop_criteria);
+    } while (max_error > stop_criteria &&
+             local_num_iteration != iteration_stop);
   }
   *error_end = sqrt(max_error);
 }

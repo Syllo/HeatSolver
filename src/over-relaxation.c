@@ -29,6 +29,7 @@
  */
 
 #include <assert.h>
+#include <stdint.h>
 #include <tgmath.h>
 
 #include "over-relaxation.h"
@@ -46,7 +47,11 @@ void solve_over_relaxation(size_t sizeX, size_t sizeY,
 
   double factorX = relaxation_factor * 0.5 * dy * dy / ((dx * dx) + (dy * dy));
   double factorY = relaxation_factor * 0.5 * dx * dx / ((dx * dx) + (dy * dy));
-  stop_criteria *= stop_criteria;
+  const size_t iteration_stop =
+      *num_iterations != 0 ? *num_iterations : SIZE_MAX;
+  stop_criteria =
+      *num_iterations != 0 ? -INFINITY : stop_criteria * stop_criteria;
+  *num_iterations = 0;
 
   double max_error;
   do {
@@ -67,7 +72,7 @@ void solve_over_relaxation(size_t sizeX, size_t sizeY,
     void *tmp = tNext;
     tNext = t;
     t = tmp;
-  } while (max_error > stop_criteria);
+  } while (max_error > stop_criteria && *num_iterations != iteration_stop);
   *error_end = sqrt(max_error);
 }
 
@@ -82,7 +87,11 @@ void solve_over_relaxation_vectorized(size_t sizeX, size_t sizeY,
 
   double factorX = relaxation_factor * 0.5 * dy * dy / ((dx * dx) + (dy * dy));
   double factorY = relaxation_factor * 0.5 * dx * dx / ((dx * dx) + (dy * dy));
-  stop_criteria *= stop_criteria;
+  const size_t iteration_stop =
+      *num_iterations != 0 ? *num_iterations : SIZE_MAX;
+  stop_criteria =
+      *num_iterations != 0 ? -INFINITY : stop_criteria * stop_criteria;
+  *num_iterations = 0;
 
   double max_error;
   do {
@@ -104,7 +113,7 @@ void solve_over_relaxation_vectorized(size_t sizeX, size_t sizeY,
     void *tmp = tNext;
     tNext = t;
     t = tmp;
-  } while (max_error > stop_criteria);
+  } while (max_error > stop_criteria && *num_iterations != iteration_stop);
   *error_end = sqrt(max_error);
 }
 
@@ -119,13 +128,18 @@ void solve_over_relaxation_parallel(size_t sizeX, size_t sizeY,
   double factorX = relaxation_factor * 0.5 * dy * dy / ((dx * dx) + (dy * dy));
   double factorY = relaxation_factor * 0.5 * dx * dx / ((dx * dx) + (dy * dy));
 
-  stop_criteria *= stop_criteria;
+  const size_t iteration_stop =
+      *num_iterations != 0 ? *num_iterations : SIZE_MAX;
+  stop_criteria =
+      *num_iterations != 0 ? -INFINITY : stop_criteria * stop_criteria;
+  *num_iterations = 0;
 
   double max_error;
 #pragma omp parallel default(none)                                             \
     shared(sizeX, sizeY, max_error, stop_criteria, num_iterations, factorX,    \
            factorY, relaxation_factor) firstprivate(t, tNext)
   {
+    size_t local_num_iteration = 0;
     do {
 #pragma omp barrier
 #pragma omp single
@@ -144,12 +158,14 @@ void solve_over_relaxation_parallel(size_t sizeX, size_t sizeY,
       }
 #pragma omp master
       (*num_iterations)++;
+      local_num_iteration++;
       if (!finite(max_error))
         break;
       void *tmp = tNext;
       tNext = t;
       t = tmp;
-    } while (max_error > stop_criteria);
+    } while (max_error > stop_criteria &&
+             local_num_iteration != iteration_stop);
   }
   *error_end = sqrt(max_error);
 }
@@ -165,13 +181,18 @@ void solve_over_relaxation_parallel_tiled(size_t sizeX, size_t sizeY,
   double factorX = relaxation_factor * 0.5 * dy * dy / ((dx * dx) + (dy * dy));
   double factorY = relaxation_factor * 0.5 * dx * dx / ((dx * dx) + (dy * dy));
 
-  stop_criteria *= stop_criteria;
+  const size_t iteration_stop =
+      *num_iterations != 0 ? *num_iterations : SIZE_MAX;
+  stop_criteria =
+      *num_iterations != 0 ? -INFINITY : stop_criteria * stop_criteria;
+  *num_iterations = 0;
 
   double max_error;
 #pragma omp parallel default(none)                                             \
     shared(sizeX, sizeY, max_error, stop_criteria, num_iterations, factorX,    \
            factorY, relaxation_factor) firstprivate(t, tNext)
   {
+    size_t local_num_iteration = 0;
     do {
 #pragma omp barrier
 #pragma omp single
@@ -197,12 +218,14 @@ void solve_over_relaxation_parallel_tiled(size_t sizeX, size_t sizeY,
       }
 #pragma omp master
       (*num_iterations)++;
+      local_num_iteration++;
       if (!finite(max_error))
         break;
       void *tmp = tNext;
       tNext = t;
       t = tmp;
-    } while (max_error > stop_criteria);
+    } while (max_error > stop_criteria &&
+             local_num_iteration != iteration_stop);
   }
   *error_end = sqrt(max_error);
 }
