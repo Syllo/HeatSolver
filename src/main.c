@@ -54,9 +54,11 @@ static struct option opt_options[] = {
     {"help", no_argument, 0, 'h'},
     {"max-error", required_argument, 0, 'e'},
     {"stop-iteration", required_argument, 0, 'i'},
+    {"stride-X", required_argument, 0, 'X'},
+    {"stride-Y", required_argument, 0, 'Y'},
     {0, 0, 0, 0}};
 
-static const char options[] = ":gjrbvptn:m:x:y:o:he:i:";
+static const char options[] = ":gjrbvptn:m:x:y:o:he:i:X:Y:";
 
 static const char help_string[] =
     "Options:"
@@ -84,6 +86,9 @@ static const char help_string[] =
 #define originalLx 1.
 #define originalLy 1.
 #define originalError 1e-2
+
+size_t PERFORATION_STRIDEX = 1;
+size_t PERFORATION_STRIDEY = 1;
 
 int main(int argc, char **argv) {
   size_t Nx = originalNx;
@@ -153,6 +158,26 @@ int main(int argc, char **argv) {
                 "size instead of \"-%c %s\"\n",
                 optchar, optarg);
         Ly = originalLy;
+      }
+      break;
+    case 'X':
+      sscanf_return = sscanf(optarg, "%zu", &PERFORATION_STRIDEX);
+      if (sscanf_return == EOF || sscanf_return == 0) {
+        fprintf(stderr,
+                "Please enter a positive integer stride"
+                "size instead of \"-%c %s\"\n",
+                optchar, optarg);
+        PERFORATION_STRIDEX = 1;
+      }
+      break;
+    case 'Y':
+      sscanf_return = sscanf(optarg, "%zu", &PERFORATION_STRIDEY);
+      if (sscanf_return == EOF || sscanf_return == 0) {
+        fprintf(stderr,
+                "Please enter a positive integer stride"
+                "size instead of \"-%c %s\"\n",
+                optchar, optarg);
+        PERFORATION_STRIDEY = 1;
       }
       break;
     case 'i':
