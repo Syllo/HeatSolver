@@ -30,8 +30,9 @@
 
 #include <assert.h>
 #include <stdint.h>
-#include <tgmath.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <tgmath.h>
 
 #include "jacobi.h"
 
@@ -40,6 +41,7 @@
 
 extern size_t PERFORATION_STRIDEX;
 extern size_t PERFORATION_STRIDEY;
+extern double rand_skip_percent;
 
 #define sqr(x) ((x) * (x))
 
@@ -64,6 +66,8 @@ void solve_jacobi(size_t sizeX, size_t sizeY, double t[restrict sizeX][sizeY],
     max_error = 0.;
     for (size_t i = 1; i < sizeX - 1; i += PERFORATION_STRIDEX) {
       for (size_t j = 1; j < sizeY - 1; j += PERFORATION_STRIDEY) {
+        if (drand48() < rand_skip_percent)
+          continue;
         tNext[i][j] = (t[i - 1][j] + t[i + 1][j]) * rev_dx2 +
                       (t[i][j - 1] + t[i][j + 1]) * rev_dy2;
         double error = t[i][j] - tNext[i][j];
@@ -71,41 +75,46 @@ void solve_jacobi(size_t sizeX, size_t sizeY, double t[restrict sizeX][sizeY],
         max_error = max(error, max_error);
       }
     }
-    for (size_t i = 1; i < sizeX - 1; ++i) {
-      for (size_t j = 1; j < sizeY - 1; ++j) {
-        if (((i - 1) % PERFORATION_STRIDEX) ||
-            ((j - 1) % PERFORATION_STRIDEY)) {
-          const size_t i_div = (i - 1) / PERFORATION_STRIDEX;
-          const size_t previous_i = i_div * PERFORATION_STRIDEX + 1;
-          size_t next_i = (i_div + 1) * PERFORATION_STRIDEX + 1;
-          const size_t j_div = (j - 1) / PERFORATION_STRIDEY;
-          const size_t previous_j = j_div * PERFORATION_STRIDEY + 1;
-          size_t next_j = (j_div + 1) * PERFORATION_STRIDEY + 1;
-          if (next_j >= sizeY - 1)
-            next_j = sizeY - 1;
-          if (next_i >= sizeX - 1)
-            next_i = sizeX - 1;
-          /*fprintf(stderr, "dpp %f dpn %f dnp %f dnn %f\n", dpp, dpn, dnp, dnn);*/
+    if (PERFORATION_STRIDEX > 1 && PERFORATION_STRIDEY > 1)
+      for (size_t i = 1; i < sizeX - 1; ++i) {
+        for (size_t j = 1; j < sizeY - 1; ++j) {
+          if (((i - 1) % PERFORATION_STRIDEX) ||
+              ((j - 1) % PERFORATION_STRIDEY)) {
+            const size_t i_div = (i - 1) / PERFORATION_STRIDEX;
+            const size_t previous_i = i_div * PERFORATION_STRIDEX + 1;
+            size_t next_i = (i_div + 1) * PERFORATION_STRIDEX + 1;
+            const size_t j_div = (j - 1) / PERFORATION_STRIDEY;
+            const size_t previous_j = j_div * PERFORATION_STRIDEY + 1;
+            size_t next_j = (j_div + 1) * PERFORATION_STRIDEY + 1;
+            if (next_j >= sizeY - 1)
+              next_j = sizeY - 1;
+            if (next_i >= sizeX - 1)
+              next_i = sizeX - 1;
+            /*fprintf(stderr, "dpp %f dpn %f dnp %f dnn %f\n", dpp, dpn, dnp,
+             * dnn);*/
 
-          double xl_div = (i - previous_i) / (double)PERFORATION_STRIDEX;
-          double xr_div = 1. - xl_div;
-          double yl_div = (j - previous_j) / (double)PERFORATION_STRIDEY;
-          double yr_div = 1. - yl_div;
-          if (!((j - 1) % PERFORATION_STRIDEY)) {
-            tNext[i][j] = tNext[previous_i][j] * xl_div + t[next_i][j] * xr_div;
-          } else if (!((i - 1) % PERFORATION_STRIDEX)) {
-            tNext[i][j] = tNext[i][previous_j] * yl_div + t[i][next_j] * yr_div;
-          } else {
-            tNext[i][j] = tNext[previous_i][previous_j] * xl_div * yl_div +
-                          tNext[previous_i][next_j] * xl_div * yr_div + tNext[next_i][previous_j] * xr_div * yl_div +
-                          tNext[next_i][next_j] * xr_div * yr_div;
+            double xl_div = (i - previous_i) / (double)PERFORATION_STRIDEX;
+            double xr_div = 1. - xl_div;
+            double yl_div = (j - previous_j) / (double)PERFORATION_STRIDEY;
+            double yr_div = 1. - yl_div;
+            if (!((j - 1) % PERFORATION_STRIDEY)) {
+              tNext[i][j] =
+                  tNext[previous_i][j] * xl_div + t[next_i][j] * xr_div;
+            } else if (!((i - 1) % PERFORATION_STRIDEX)) {
+              tNext[i][j] =
+                  tNext[i][previous_j] * yl_div + t[i][next_j] * yr_div;
+            } else {
+              tNext[i][j] = tNext[previous_i][previous_j] * xl_div * yl_div +
+                            tNext[previous_i][next_j] * xl_div * yr_div +
+                            tNext[next_i][previous_j] * xr_div * yl_div +
+                            tNext[next_i][next_j] * xr_div * yr_div;
+            }
+            double error = t[i][j] - tNext[i][j];
+            error *= error;
+            max_error = max(max_error, error);
           }
-          double error = t[i][j] - tNext[i][j];
-          error *= error;
-          max_error = max(max_error, error);
         }
       }
-    }
     (*num_iterations)++;
     if (!finite(max_error))
       break;

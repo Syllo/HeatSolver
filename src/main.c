@@ -56,9 +56,10 @@ static struct option opt_options[] = {
     {"stop-iteration", required_argument, 0, 'i'},
     {"stride-X", required_argument, 0, 'X'},
     {"stride-Y", required_argument, 0, 'Y'},
+    {"rand-skip", required_argument, 0, 'R'},
     {0, 0, 0, 0}};
 
-static const char options[] = ":gjrbvptn:m:x:y:o:he:i:X:Y:";
+static const char options[] = ":gjrbvptn:m:x:y:o:he:i:X:Y:R:";
 
 static const char help_string[] =
     "Options:"
@@ -89,6 +90,7 @@ static const char help_string[] =
 
 size_t PERFORATION_STRIDEX = 1;
 size_t PERFORATION_STRIDEY = 1;
+double rand_skip_percent = 0.;
 
 int main(int argc, char **argv) {
   size_t Nx = originalNx;
@@ -137,6 +139,17 @@ int main(int argc, char **argv) {
                 "size instead of \"-%c %s\"\n",
                 optchar, optarg);
         Lx = originalLx;
+      }
+      break;
+    case 'R':
+      sscanf_return = sscanf(optarg, "%lf", &rand_skip_percent);
+      if (sscanf_return == EOF || sscanf_return == 0 ||
+          rand_skip_percent < 0. || rand_skip_percent > 1.) {
+        fprintf(stderr,
+                "Please enter a floating point number between 0 and 1 for the "
+                "random skip value "
+                "instead of \"-%c %s\"\n",
+                optchar, optarg);
       }
       break;
     case 'e':
