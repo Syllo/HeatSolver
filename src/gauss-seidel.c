@@ -51,7 +51,7 @@ void solve_gauss_seidel(size_t sizeX, size_t sizeY,
   const size_t iteration_stop =
       *num_iterations != 0 ? *num_iterations : SIZE_MAX;
   stop_criteria =
-      *num_iterations != 0 ? -INFINITY : stop_criteria * stop_criteria;
+      *num_iterations != 0 ? -HUGE_VAL : stop_criteria * stop_criteria;
   *num_iterations = 0;
 
   do {
@@ -92,7 +92,7 @@ void solve_gauss_seidel_parallel(size_t sizeX, size_t sizeY,
   const size_t iteration_stop =
       *num_iterations != 0 ? *num_iterations : SIZE_MAX;
   stop_criteria =
-      *num_iterations != 0 ? -INFINITY : stop_criteria * stop_criteria;
+      *num_iterations != 0 ? -HUGE_VAL : stop_criteria * stop_criteria;
   *num_iterations = 0;
   double max_error;
 #pragma omp parallel shared(num_iterations, error_end, stop_criteria, sizeX,   \
@@ -137,7 +137,7 @@ void solve_gauss_seidel_parallel_tiled(size_t sizeX, size_t sizeY,
   const size_t iteration_stop =
       *num_iterations != 0 ? *num_iterations : SIZE_MAX;
   stop_criteria =
-      *num_iterations != 0 ? -INFINITY : stop_criteria * stop_criteria;
+      *num_iterations != 0 ? -HUGE_VAL : stop_criteria * stop_criteria;
   *num_iterations = 0;
 
   double max_error;

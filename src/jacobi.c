@@ -50,7 +50,7 @@ void solve_jacobi(size_t sizeX, size_t sizeY, double t[restrict sizeX][sizeY],
   const size_t iteration_stop =
       *num_iterations != 0 ? *num_iterations : SIZE_MAX;
   stop_criteria =
-      *num_iterations != 0 ? -INFINITY : stop_criteria * stop_criteria;
+      *num_iterations != 0 ? -HUGE_VAL : stop_criteria * stop_criteria;
   *num_iterations = 0;
 
   double max_error;
@@ -89,7 +89,7 @@ void solve_jacobi_vectorized(size_t sizeX, size_t sizeY,
   const size_t iteration_stop =
       *num_iterations != 0 ? *num_iterations : SIZE_MAX;
   stop_criteria =
-      *num_iterations != 0 ? -INFINITY : stop_criteria * stop_criteria;
+      *num_iterations != 0 ? -HUGE_VAL : stop_criteria * stop_criteria;
   *num_iterations = 0;
 
   double max_error;
@@ -128,7 +128,7 @@ void solve_jacobi_parallel(size_t sizeX, size_t sizeY,
   const size_t iteration_stop =
       *num_iterations != 0 ? *num_iterations : SIZE_MAX;
   stop_criteria =
-      *num_iterations != 0 ? -INFINITY : stop_criteria * stop_criteria;
+      *num_iterations != 0 ? -HUGE_VAL : stop_criteria * stop_criteria;
   *num_iterations = 0;
 
   double max_error;
@@ -183,7 +183,7 @@ void solve_jacobi_parallel_tiled(size_t sizeX, size_t sizeY,
   const size_t iteration_stop =
       *num_iterations != 0 ? *num_iterations : SIZE_MAX;
   stop_criteria =
-      *num_iterations != 0 ? -INFINITY : stop_criteria * stop_criteria;
+      *num_iterations != 0 ? -HUGE_VAL : stop_criteria * stop_criteria;
   *num_iterations = 0;
 
   double max_error;
