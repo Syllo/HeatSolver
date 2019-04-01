@@ -255,6 +255,8 @@ int main(int argc, char **argv) {
     exit(EXIT_FAILURE);
   }
 
+  srand48(time(NULL));
+
   double Dx = Lx / (double)Nx;
   double Dy = Ly / (double)Ny;
   fprintf(stdout, "Domain (%e , %e) points (%zu,%zu) (Dx: %e , Dy: %e)\n", Lx,
