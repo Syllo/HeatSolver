@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 Maxime Schmitt <max.schmitt@unistra.fr>
+ * Copyright (c) 2020 Maxime Schmitt <maxime.schmitt@manchester.ac.uk>
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -134,7 +134,7 @@ void solve_jacobi_parallel(size_t sizeX, size_t sizeY,
   double max_error;
 #pragma omp parallel default(none)                                             \
     shared(sizeX, sizeY, max_error, stop_criteria, num_iterations, rev_dx2,    \
-           rev_dy2) firstprivate(t, tNext)
+           rev_dy2, iteration_stop) firstprivate(t, tNext)
   {
     size_t local_num_iteration = 0;
     do {
