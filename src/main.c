@@ -57,9 +57,10 @@ static struct option opt_options[] = {
     {"stride-X", required_argument, 0, 'X'},
     {"stride-Y", required_argument, 0, 'Y'},
     {"rand-skip", required_argument, 0, 'R'},
+    {"sort-skip", no_argument, 0, 'S'},
     {0, 0, 0, 0}};
 
-static const char options[] = ":gjrbvptn:m:x:y:o:he:i:X:Y:R:";
+static const char options[] = ":gjrbvptn:m:x:y:o:he:i:X:Y:R:S";
 
 static const char help_string[] =
     "Options:"
@@ -91,6 +92,7 @@ static const char help_string[] =
 size_t PERFORATION_STRIDEX = 1;
 size_t PERFORATION_STRIDEY = 1;
 double rand_skip_percent = 0.;
+bool sort_skip = false;
 
 int main(int argc, char **argv) {
   size_t Nx = originalNx;
@@ -151,6 +153,9 @@ int main(int argc, char **argv) {
                 "instead of \"-%c %s\"\n",
                 optchar, optarg);
       }
+      break;
+    case 'S':
+      sort_skip = true;
       break;
     case 'e':
       sscanf_return = sscanf(optarg, "%lf", &error_criteria);

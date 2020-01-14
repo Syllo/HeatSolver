@@ -29,6 +29,7 @@
  */
 
 #include <assert.h>
+#include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -42,8 +43,28 @@
 extern size_t PERFORATION_STRIDEX;
 extern size_t PERFORATION_STRIDEY;
 extern double rand_skip_percent;
+extern bool sort_skip;
 
 #define sqr(x) ((x) * (x))
+
+struct dataPosDeviation {
+  double error;
+  size_t posX, posY;
+};
+
+static int compareDeviation(const void *a, const void *b) {
+  const struct dataPosDeviation *data1 = (const struct dataPosDeviation *)a;
+  const struct dataPosDeviation *data2 = (const struct dataPosDeviation *)b;
+  if (data1->error < data2->error) {
+    return -1;
+  } else {
+    if (data1->error > data2->error) {
+      return 1;
+    } else {
+      return 0;
+    }
+  }
+}
 
 void solve_jacobi(size_t sizeX, size_t sizeY, double t[restrict sizeX][sizeY],
                   double tNext[restrict sizeX][sizeY], double stop_criteria,
@@ -61,17 +82,25 @@ void solve_jacobi(size_t sizeX, size_t sizeY, double t[restrict sizeX][sizeY],
       *num_iterations != 0 ? -HUGE_VAL : stop_criteria * stop_criteria;
   *num_iterations = 0;
 
+  struct dataPosDeviation(*dpd)[sizeY - 2] =
+      malloc(sizeof(struct dataPosDeviation[sizeX - 2][sizeY - 2]));
+
   double max_error;
   do {
     max_error = 0.;
     for (size_t i = 1; i < sizeX - 1; i += PERFORATION_STRIDEX) {
       for (size_t j = 1; j < sizeY - 1; j += PERFORATION_STRIDEY) {
-        if (drand48() < rand_skip_percent)
+        if (!sort_skip && drand48() < rand_skip_percent)
           continue;
         tNext[i][j] = (t[i - 1][j] + t[i + 1][j]) * rev_dx2 +
                       (t[i][j - 1] + t[i][j + 1]) * rev_dy2;
         double error = t[i][j] - tNext[i][j];
         error *= error;
+        if (sort_skip) {
+          dpd[i - 1][j - 1].error = error;
+          dpd[i - 1][j - 1].posX = i;
+          dpd[i - 1][j - 1].posY = j;
+        }
         max_error = max(error, max_error);
       }
     }
@@ -115,6 +144,23 @@ void solve_jacobi(size_t sizeX, size_t sizeY, double t[restrict sizeX][sizeY],
           }
         }
       }
+    if (sort_skip) {
+      qsort(dpd, (sizeX - 2) * (sizeY - 2), sizeof(struct dataPosDeviation),
+            compareDeviation);
+      double threshold_d =
+          ceil(((sizeX - 2) * (sizeY - 2)) * rand_skip_percent);
+      size_t threshold = (size_t)threshold_d;
+      size_t whereAmI = 0;
+      for (size_t i = 0; whereAmI < threshold && i < sizeX - 2; ++i) {
+        for (size_t j = 0; whereAmI < threshold && j < sizeY - 2;
+             ++j, whereAmI++) {
+          // simulate skipping the computation for the values that have lowest
+          // update derivative
+          tNext[dpd[i][j].posX][dpd[i][j].posY] =
+              t[dpd[i][j].posX][dpd[i][j].posY];
+        }
+      }
+    }
     (*num_iterations)++;
     if (!finite(max_error))
       break;
@@ -123,6 +169,7 @@ void solve_jacobi(size_t sizeX, size_t sizeY, double t[restrict sizeX][sizeY],
     t = tmp;
   } while (max_error > stop_criteria && *num_iterations != iteration_stop);
   *error_end = sqrt(max_error);
+  free(dpd);
 }
 
 void solve_jacobi_vectorized(size_t sizeX, size_t sizeY,

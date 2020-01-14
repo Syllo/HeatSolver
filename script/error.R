@@ -25,6 +25,11 @@ if (!all.equal(heatTableOriginal[,c("xpos","ypos")],heatTableAcr[,c("xpos","ypos
   stop("The data grid of the two files does not match\n", call. = FALSE)
 }
 
-summaryData <- data.frame(unclass(summary(stdError(heatTableAcr$temp, heatTableOriginal$temp) / (500.))))
+maxdens <- max(heatTableOriginal$temp)
+mindens <- min(heatTableOriginal$temp)
+range  <- stdError(maxdens,mindens)
+
+summaryData <- data.frame(unclass(summary(stdError(heatTableAcr$temp, heatTableOriginal$temp) / (range))))
 names(summaryData) <- ""
 print(summaryData, digits = 3, zero.print = "0")
+cat(sprintf("Range %.3f\n", range))
