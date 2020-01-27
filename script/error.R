@@ -1,10 +1,5 @@
 #!/bin/Rscript
 
-if (!require(plyr, quietly = TRUE)) {
-  install.packages("plyr", dependencies = TRUE)
-  library(plyr)
-}
-
 stdError <- function(arg1,arg2) {
   return(sqrt((arg1-arg2)^2))
 }
